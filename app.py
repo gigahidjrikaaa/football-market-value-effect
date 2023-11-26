@@ -116,10 +116,75 @@ def test_section():
     color = st.color_picker('Pick A Color', '#00f900')
     st.write('The current color is', color)
 
+    st.write("This is the `st.code` function:")
+    st.code("import numpy as np\nimport pandas as pd")
+
+    st.write("And this is the `st.echo` function:")
+    st.echo("import numpy as np\nimport pandas as pd")
+
+    st.write("This is the `st.latex` function:")
+    st.latex(r''' e^{i\pi} + 1 = 0 ''')
+
+    st.write("This is the `st.markdown` function:")
+    st.markdown("Streamlit is **_really_ cool**.")
+
+    st.write("This is the `st.pyplot` function:")
+    arr = np.random.normal(1, 1, size=100)
+    plt.hist(arr, bins=20)
+    st.pyplot(plt)
+
+    st.write("This is the `st.table` function:")
+    df = pd.DataFrame(
+        np.random.randn(10, 5),
+        columns=('col %d' % i for i in range(5))
+    )
+    st.table(df)
+
+    st.write("This is the `st.dataframe` function:")
+    df = pd.DataFrame(
+        np.random.randn(10, 5),
+        columns=('col %d' % i for i in range(5))
+    )
+    st.dataframe(df)
+
+    st.write("This is the `st.json` function:")
+    st.json({
+        'foo': 'bar',
+        'baz': 'boz',
+        'stuff': [
+            'stuff 1',
+            'stuff 2',
+            'stuff 3',
+            'stuff 5',
+        ],
+    })
+
+    st.write("This is the `st.balloons` function:")
+    st.balloons()
+
+    st.write("This is the `st.error` function:")
+    st.error("This is an error")
+
+    st.write("This is the `st.warning` function:")
+    st.warning("This is a warning")
+
+    st.write("This is the `st.info` function:")
+    st.info("This is a purely informational message")
+
+    st.write("This is the `st.success` function:")
+    st.success("This is a success message!")
+
+    st.write("This is the `st.exception` function:")
+    e = RuntimeError('This is an exception of type RuntimeError')
+    st.exception(e)
+
+    st.write("This is the `st.help` function:")
+    st.help(pd.DataFrame)
+
 def main():
     st.sidebar.title("Navigation")
     st.sidebar.subheader("Go to")
-    app_mode = st.sidebar.radio("Select Page", ["Home", "Data", "Model", "About", "TestPage"])
+    app_mode = st.sidebar.radio("", ["Home", "Data", "Model", "About", "TestPage"])
     hero_section()
     if app_mode == "Home":
         home_section()
