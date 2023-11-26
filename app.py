@@ -7,6 +7,22 @@ from streamlit.proto.RootContainer_pb2 import SIDEBAR
 import matplotlib.pyplot as plt
 import psycopg2 as psy
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+st.set_page_config(
+    page_title="Football Market Value Effect App",
+    page_icon="🧊",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+# Load environment variables
+DB_HOST = os.environ['DB_HOST']
+DB_USERNAME = os.environ['DB_USERNAME']
+DB_PASSWORD = os.environ['DB_PASSWORD']
+DB_NAME = os.environ['DB_NAME']
 
 def hero_section():
     image = Image.open('images/pl-hero.png')
@@ -21,6 +37,37 @@ def home_section():
 def data_section():
     st.header("Data")
     st.write("This app uses data collected from various sources.")
+
+    # DSN string
+    dsn = f"host={DB_HOST} user={DB_USERNAME} password={DB_PASSWORD} dbname={DB_NAME}"
+
+    # Connect to elephantSQL
+    conn = psy.connect(dsn)
+
+    # Create cursor
+    cur = conn.cursor()
+
+    # Query
+    query = """
+        SELECT * FROM players
+        LIMIT 10;
+    """
+
+    # Execute query
+    cur.execute(query)
+
+    # Fetch data
+    data = cur.fetchall()
+
+    # Close cursor
+    cur.close()
+
+    # Close connection
+    conn.close()
+
+    # Show raw data
+    st.write("Raw data:")
+    st.write(data)
 
 def model_section():
     st.header("Model")
