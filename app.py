@@ -2,7 +2,34 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import datetime
+from PIL import Image
+from streamlit.proto.RootContainer_pb2 import SIDEBAR
+import matplotlib.pyplot as plt
 
+# Hero image
+image = Image.open('images/pl-hero.png')
+st.image(image, use_column_width=True)
+
+# Sidebar
+st.sidebar.header("Navigation")
+st.sidebar.subheader("Go to")
+app_mode = st.sidebar.selectbox("", ["Home", "Data", "Model", "About"])
+if app_mode == "Home":
+    st.header("Home")
+    st.write("Welcome to the Plant Leaf Disease Detection App!")
+    st.write("This app is designed to help farmers and gardeners to detect diseases in their plants.")
+    st.write("Please select a page in the sidebar to get started.")
+elif app_mode == "Data":
+    st.header("Data")
+    st.write("This app uses a dataset of plant leaf images from Kaggle.")
+elif app_mode == "Model":
+    st.header("Model")
+    st.write("This app uses a pretrained convolutional neural network to detect plant leaf diseases.")
+elif app_mode == "About":
+    st.header("About")
+    st.write("This app was created by [Izzat Arroyan](https://www.linkedin.com/in/izzatarroyan/), [Giga Hidjrika Aura Adkhy](https://www.linkedin.com/in/gigahidjrikaaa/), and [Daffa Kamal](https://www.linkedin.com/in/daffakamal/).")
+
+# Title
 st.title("Hello World")
 st.write("This is my first Streamlit app!")
 
