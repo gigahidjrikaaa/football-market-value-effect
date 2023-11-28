@@ -13,9 +13,9 @@ load_dotenv()
 
 st.set_page_config(
     page_title="Football Market Value Effect App",
-    page_icon="🧊",
+    page_icon="⚽",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="auto",
 )
 
 # Load environment variables
@@ -25,6 +25,7 @@ DB_PASSWORD = os.environ['DB_PASSWORD']
 DB_NAME = os.environ['DB_NAME']
 
 def hero_section():
+    st.title("Football Market Value Effect App")
     image = Image.open('images/pl-hero.png')
     st.image(image, use_column_width=True)
 
@@ -48,16 +49,38 @@ def data_section():
     cur = conn.cursor()
 
     # Query
-    query = """
-        SELECT * FROM players
-        LIMIT 10;
+    teams_query = """
+        SELECT * FROM teams
+        -- LIMIT 10;
     """
 
-    # Execute query
-    cur.execute(query)
+    # Matches query
+    matches_query = """
+        SELECT * FROM matches
+        -- LIMIT 10;
+    """
 
-    # Fetch data
+    # Select all tables
+    all_tables_query = """
+        SELECT table_name
+        FROM information_schema.tables
+        WHERE table_schema='public'
+        AND table_type='BASE TABLE';
+    """
+
+    # Teams query
+    query = teams_query
+    cur.execute(query)
     data = cur.fetchall()
+
+    # All tables query
+    cur.execute(all_tables_query)
+    tables = cur.fetchall()
+
+    # Matches query
+    query = matches_query
+    cur.execute(query)
+    matches = cur.fetchall()
 
     # Close cursor
     cur.close()
@@ -65,9 +88,23 @@ def data_section():
     # Close connection
     conn.close()
 
-    # Show raw data
-    st.write("Raw data:")
+    # Transform data into dataframe with these headers: TeamID,TeamName,MarketValue,No,Team,M,W,D,L,G,GA,PTS,xG,xGA,xPTS
+    data = pd.DataFrame(data, columns=['TeamID','TeamName','MarketValue','No','Team','M','W','D','L','G','GA','PTS','xG','xGA','xPTS'])
+
+    # Transform tables into dataframe with these headers: table_name
+    tables = pd.DataFrame(tables, columns=['table_name'])
+
+    # Transform matches into dataframe with these headers: matchId,matchday,homeTeamId,awayTeamId,homeScore,awayScore,played
+    matches = pd.DataFrame(matches, columns=['matchId','matchday','homeTeamId','awayTeamId','homeScore','awayScore','played'])
+
+    st.header("Teams")
     st.write(data)
+
+    st.header("Matches")
+    st.write(matches)
+
+    st.header("Tables")
+    st.write(tables)
 
 def model_section():
     st.header("Model")
