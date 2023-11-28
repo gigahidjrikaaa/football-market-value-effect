@@ -7,6 +7,7 @@ from streamlit.proto.RootContainer_pb2 import SIDEBAR
 import matplotlib.pyplot as plt
 import psycopg2 as psy
 import os
+import base64
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -24,20 +25,59 @@ DB_USERNAME = os.environ['DB_USERNAME']
 DB_PASSWORD = os.environ['DB_PASSWORD']
 DB_NAME = os.environ['DB_NAME']
 
+hero_content = """
+    <style>
+        .reportview-container {
+            background: url("data:image/png;base64, {data_url}") no-repeat center center fixed;
+            background-size: cover;
+        }
+    </style>
+    <div style="">
+        <h1 style="text-align: center;"> Football Market Value Effect App </h1>
+    </div>
+    <img src="./images/pl-hero.png" alt="Premier League Hero" style="width: 100%; height: auto;">
+    <div style="background-color: #f5f5f5; padding: 10px; border-radius: 10px;">
+        <p style="color: #000000; font-size: 16px; font-weight: bold;">This app is designed for Data Engineering course by Mr. Syukron.</p>
+        <p style="color: #000000; font-size: 14px;">Please select a page in the sidebar to get started.</p>
+    </div>
+
+"""
+
 def hero_section():
-    st.title("Football Market Value Effect App")
+    st.markdown('<h1 style="text-align: center;"> Football Market Value Effect App </h1>', unsafe_allow_html=True)
     image = Image.open('images/pl-hero.png')
     st.image(image, use_column_width=True)
 
+home_content = """
+    <style>
+        .reportview-container {
+            background: url("https://media3.giphy.com/media/3o6Zt6ML9rBj6ZDvO8/giphy.gif?cid=ecf05e47zv7m3b8k5kx7k0xq5x1k0q8x4m8xq0g5j5j2n8q2&ep=v1&ct=g") no-repeat center center fixed;
+            background-size: cover;
+        }
+    </style>
+    <div style="background-color: #f5f5f5; padding: 10px; border-radius: 10px;">
+        <p style="color: #000000; font-size: 16px; font-weight: bold;">Football Market Value Effect App</p>
+        <p style="color: #000000; font-size: 14px;">This app is designed for Data Engineering course by Mr. Syukron.</p>
+        <p style="color: #000000; font-size: 14px;">Please select a page in the sidebar to get started.</p>
+    </div>
+
+"""
+
 def home_section():
     st.header("Home")
-    st.write("Welcome to the Football Market Value Effect App!")
-    st.write("This app is designed for Data Engineering course by Mr. Syukron.")
-    st.write("Please select a page in the sidebar to get started.")
+    # st.markdown(home_content, unsafe_allow_html=True)
+    st.write("Welcome to the Football Market Value Effect App! This app is designed for **Data Engineering** course by **Mr. Syukron**.")
+    st.info("Please select a page in the sidebar to get started.")
+    st.image("https://media3.giphy.com/media/q763Sw8dCByWM2oNI6/giphy.gif?cid=ecf05e471j5edwxvokyxz2r10m0uyhcy3z74h74jto59cs6x&ep=v1_gifs_search&rid=giphy.gif&ct=g", use_column_width="True")
+    st.markdown("> # ***Siuuuuuuuuuuuuuuuuuuuuuu*** \n > \- Cristiano Ronaldo")
 
 def data_section():
     st.header("Data")
-    st.write("This app uses data collected from various sources.")
+    st.write("We have 3 data sources from this project:")
+    st.write("1. [Transfermarkt](https://www.kaggle.com/zaeemnalla/premier-league#teams.csv)")
+    st.write("2. [Football-data.org](https://www.kaggle.com/zaeemnalla/premier-league#matches.csv)")
+    st.write("3. [Ap yh](https://www.kaggle.com/zaeemnalla/premier-league#tables.csv)")
+    st.image("https://media3.giphy.com/media/N97DxHrADyYGovSlRN/giphy.gif?cid=ecf05e47gyar03htuztm57qe3ji8oce75xhmowop7nrx0c0i&ep=v1_gifs_search&rid=giphy.gif&ct=g", use_column_width="True")
 
     # DSN string
     dsn = f"host={DB_HOST} user={DB_USERNAME} password={DB_PASSWORD} dbname={DB_NAME}"
