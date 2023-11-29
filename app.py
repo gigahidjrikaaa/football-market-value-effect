@@ -94,13 +94,6 @@ def data_section():
         -- LIMIT 10;
     """
 
-    # Sorted Teams query
-    sorted_teams_query = """
-        SELECT * FROM teams
-        ORDER BY marketvalue DESC
-        -- LIMIT 10;
-    """
-
     # Matches query
     matches_query = """
         SELECT * FROM matches
@@ -120,11 +113,6 @@ def data_section():
     cur.execute(query)
     data = cur.fetchall()
 
-    # Sorted Teams query
-    query = sorted_teams_query
-    cur.execute(query)
-    sorted_teams = cur.fetchall()
-
     # All tables query
     cur.execute(all_tables_query)
     tables = cur.fetchall()
@@ -141,7 +129,7 @@ def data_section():
     conn.close()
 
     # Transform data into dataframe with these headers: TeamID,TeamName,MarketValue,No,Team,M,W,D,L,G,GA,PTS,xG,xGA,xPTS
-    data = pd.DataFrame(data, columns=['TeamID','TeamName','MarketValue','No','Team','M','W','D','L','G','GA','PTS','xG','xGA','xPTS'])
+    data = pd.DataFrame(data, columns=['TeamID','TeamName','MarketValue','Rank','Team','M','W','D','L','G','GA','PTS','xG','xGA','xPTS'])
 
     # Transform tables into dataframe with these headers: table_name
     tables = pd.DataFrame(tables, columns=['table_name'])
@@ -150,13 +138,76 @@ def data_section():
     matches = pd.DataFrame(matches, columns=['matchId','matchday','homeTeamId','awayTeamId','homeScore','awayScore','played'])
 
     st.header("Teams")
-    st.write(data)
+    st.dataframe(data, use_container_width=True)
+    st.warning("**Legend**")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.warning("1. M = Matches Played \n 2. W = Matches Won \n 3. D = Matches Drawn \n 4. L = Matches Lost \n 5. G = Goals Scored")
+    with col2:
+        st.warning("6. GA = Goals Against \n 7. PTS = Points \n 8. xG = Expected Goals \n 9. xGA = Expected Goals Against \n 10. xPTS = Expected Points")
 
-    st.header("Sorted Teams Based by Market Value")
-    st.write(sorted_teams)
+    # Create 2 columns
+    col1, col2 = st.columns(2)
+
+    # Column 1
+    with col1:
+        # Visualize the chosen column using matplotlib
+        fig, ax = plt.subplots()
+        sort_by = st.selectbox("Sort by:", ["MarketValue", "M", "W", "D", "L", "G", "GA", "PTS", "xG", "xGA", "xPTS"])
+        direction = st.radio("Direction:", ["From Highest", "From Lowest"])
+        sorted_data = data.sort_values(by=[sort_by], ascending=(direction == "From Lowest"))
+        ax.bar(sorted_data['TeamName'], sorted_data[sort_by])
+        plt.xticks(rotation=90)
+        plt.title(f"Premier League {sort_by} Comparison")
+        plt.xlabel("Team Name")
+        plt.ylabel(sort_by)
+        st.pyplot(fig)
+
+    # Column 2
+    with col2:
+        # Show the rank and name of the teams in table form
+        data_sorted_by_rank = data.sort_values(by=['Rank'])
+        st.write("Rank and Name of Teams")
+        # show only Rank and TeamName columns without the index and min height = 500px
+        st.dataframe(data_sorted_by_rank[['Rank', 'TeamName', sort_by]], hide_index=True, use_container_width=True, height=750)
+        st.write("")
+
 
     st.header("Matches")
-    st.write(matches)
+    st.dataframe(matches, use_container_width=True)
+
+    # Create 2 columns
+    col1, col2 = st.columns(2)
+
+    # Column 1
+    with col1:
+        # Create a pie chart which shows the percentage of win, draw, and lose in home matches  
+        fig, ax = plt.subplots()
+        home_win = matches[matches['homeScore'] > matches['awayScore']].count()['matchId']
+        home_draw = matches[matches['homeScore'] == matches['awayScore']].count()['matchId']
+        home_lose = matches[matches['homeScore'] < matches['awayScore']].count()['matchId']
+        # Win = green (#377B2B)
+        # Draw = yellow (#FDBB2F)
+        # Lose = red (#C93127)
+        ax.pie([home_win, home_draw, home_lose], labels=['Win', 'Draw', 'Lose'], autopct='%1.1f%%', startangle=90, colors=['#377B2B', '#FDBB2F', '#C93127'])
+        ax.axis('equal')
+        plt.title("Percentage of Win, Draw, and Lose in Home Matches")
+        st.pyplot(fig)
+
+
+    with col2:
+        # create a pie chart which shows how many matches have been played
+        fig, ax = plt.subplots()
+        played = matches[matches['played'] == True].count()['matchId']
+        not_played = matches[matches['played'] == False].count()['matchId']
+        # Pie chart with the percentage and the exact number of matches
+        ax.pie([played, not_played], labels=['Played', 'Not Played'], autopct='%1.1f%%', startangle=90, colors=['#377B2B', '#C93127'])
+        ax.text(-0.5, 0.1, f"{played} matches", fontsize=10, weight='bold', ha='center')
+        ax.text(0.5, -0.2, f"{not_played} matches", fontsize=10, weight='bold', ha='center')
+        ax.axis('equal')
+        plt.title("Percentage of Played and Not Played Matches")
+        st.pyplot(fig)
+    
 
     st.header("Tables")
     st.write(tables)
