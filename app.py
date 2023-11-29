@@ -207,6 +207,7 @@ def data_section(params_team_data, params_matches_data):
         plt.ylabel(sort_by)
         st.pyplot(fig)
 
+
     # Column 2
     with col2:
         # Show the rank and name of the teams in table form
@@ -218,6 +219,7 @@ def data_section(params_team_data, params_matches_data):
             st.dataframe(data_sorted_by_rank[['Rank', 'TeamName', 'MarketValue', sort_by]], hide_index=True, use_container_width=True, height=750)
         st.write("")
 
+    # 3 columns: average Market Value, xG, and xGA
     # Average Market Value
     st.subheader("Average Market Value")
     # Create a bar chart
@@ -328,6 +330,61 @@ def team_performance_section(params_team_data, params_matches_data):
         team_name1 = st.selectbox("Select team 1:", team_data['TeamName'].tolist())
         st.subheader(team_name1)
         st.write(team_data[team_data['TeamName'] == team_name1])
+
+        # Count how many times team 1 played in home that has been played
+        home_matches = matches_data[(matches_data['homeTeamId'] == team_name1) & (matches_data['played'] == 'Yes')].count()['matchId']
+        # Count how many times team 1 played in away
+        away_matches = matches_data[(matches_data['awayTeamId'] == team_name1) & (matches_data['played'] == 'Yes')].count()['matchId']
+        # Create a pie chart which shows the percentage of home and away matches
+        fig, ax = plt.subplots()
+        ax.pie([home_matches, away_matches], labels=['Home', 'Away'], autopct='%1.1f%%', startangle=90, colors=['#377B2B', '#C93127'])
+        ax.axis('equal')
+        plt.title("Percentage of Home and Away Matches")
+        st.pyplot(fig)
+        # 2 subcolumns: home and away matches
+        subcol1, subcol2 = st.columns(2)
+        with subcol1:
+            st.write(f"Home matches: {home_matches}")
+        with subcol2:
+            st.write(f"Away matches: {away_matches}")
+
+        # Count how many times team 1 won in home
+        home_win = matches_data[(matches_data['homeTeamId'] == team_name1) & (matches_data['result'] == 'Home')].count()['matchId']
+        home_lose = matches_data[(matches_data['homeTeamId'] == team_name1) & (matches_data['result'] == 'Away')].count()['matchId']
+        home_draw = matches_data[(matches_data['homeTeamId'] == team_name1) & (matches_data['result'] == 'Draw')].count()['matchId']
+        # Pie chart to show the percentage of win, draw, and lose in home matches
+        fig, ax = plt.subplots()
+        ax.pie([home_win, home_draw, home_lose], labels=['Win', 'Draw', 'Lose'], autopct='%1.1f%%', startangle=90, colors=['#377B2B', '#FDBB2F', '#C93127'])
+        ax.axis('equal')
+        plt.title("Percentage of Win, Draw, and Lose in Home Matches")
+        st.pyplot(fig)
+        # 2 subcolumns: home and away matches
+        subcol1, subcol2 = st.columns(2)
+        with subcol1:
+            st.write(f"Home win: {home_win}")
+            st.write(f"Home draw: {home_draw}")
+        with subcol2:
+            st.write(f"Home lose: {home_lose}")
+            st.write(f"Home matches: {home_matches}")
+
+        # Count how many times team 1 won in away
+        away_win = matches_data[(matches_data['awayTeamId'] == team_name1) & (matches_data['result'] == 'Away')].count()['matchId']
+        away_lose = matches_data[(matches_data['awayTeamId'] == team_name1) & (matches_data['result'] == 'Home')].count()['matchId']
+        away_draw = matches_data[(matches_data['awayTeamId'] == team_name1) & (matches_data['result'] == 'Draw')].count()['matchId']
+        # Pie chart to show the percentage of win, draw, and lose in away matches
+        fig, ax = plt.subplots()
+        ax.pie([away_win, away_draw, away_lose], labels=['Win', 'Draw', 'Lose'], autopct='%1.1f%%', startangle=90, colors=['#377B2B', '#FDBB2F', '#C93127'])
+        ax.axis('equal')
+        plt.title("Percentage of Win, Draw, and Lose in Away Matches")
+        st.pyplot(fig)
+        # 2 subcolumns: home and away matches
+        subcol1, subcol2 = st.columns(2)
+        with subcol1:
+            st.write(f"Away win: {away_win}")
+            st.write(f"Away draw: {away_draw}")
+        with subcol2:
+            st.write(f"Away lose: {away_lose}")
+            st.write(f"Away matches: {away_matches}")
     
     # Column 2
     with col2:
@@ -340,17 +397,52 @@ def team_performance_section(params_team_data, params_matches_data):
     # Create a dataframe which contains the data of team 1 and team 2
     team1 = team_data[team_data['TeamName'] == team_name1]
     team2 = team_data[team_data['TeamName'] == team_name2]
-    team1_and_team2 = pd.concat([team1, team2])
-    # Create a bar chart to compare the market value and xG of team 1 and team 2
-    fig, ax = plt.subplots()
-    ax.bar(team1_and_team2['TeamName'], team1_and_team2['MarketValue'], label='Market Value')
-    ax.bar(team1_and_team2['TeamName'], team1_and_team2['xG'], label='xG')
-    plt.xticks(rotation=90)
-    plt.title(f"Comparison between {team_name1} and {team_name2}")
-    plt.xlabel("Team Name")
-    plt.ylabel("Market Value and xG")
-    plt.legend()
-    st.pyplot(fig)
+    
+    # 3 columns: MarketValue Comparison, xG Comparison, and xGA Comparison
+    col1, col2, col3 = st.columns(3)
+
+    # Column 1
+    with col1:
+        # Create a bar chart which shows the market value comparison between team 1 and team 2
+        fig, ax = plt.subplots()
+        ax.bar(team1['TeamName'], team1['MarketValue'])
+        ax.bar(team2['TeamName'], team2['MarketValue'])
+        plt.xticks(rotation=0)
+        plt.title("Market Value Comparison")
+        plt.xlabel("Team Name")
+        plt.ylabel("Market Value")
+        st.pyplot(fig)
+
+    # Column 2
+    with col2:
+        # Create a bar chart which shows the xG comparison between team 1 and team 2
+        fig, ax = plt.subplots()
+        ax.bar(team1['TeamName'], team1['xG'])
+        ax.bar(team2['TeamName'], team2['xG'])
+        plt.xticks(rotation=0)
+        plt.title("xG Comparison")
+        plt.xlabel("Team Name")
+        plt.ylabel("xG")
+        st.pyplot(fig)
+
+    # Column 3
+    with col3:
+        # Create a bar chart which shows the xGA comparison between team 1 and team 2
+        fig, ax = plt.subplots()
+        ax.bar(team1['TeamName'], team1['xGA'])
+        ax.bar(team2['TeamName'], team2['xGA'])
+        plt.xticks(rotation=0)
+        plt.title("xGA Comparison")
+        plt.xlabel("Team Name")
+        plt.ylabel("xGA")
+        st.pyplot(fig)
+        if team1['xGA'].values[0] > team2['xGA'].values[0]:
+            st.write(f"{team_name1} has a better defense than {team_name2}")
+        elif team1['xGA'].values[0] < team2['xGA'].values[0]:
+            st.write(f"{team_name2} has a better defense than {team_name1}")
+        else:
+            st.write(f"{team_name1} and {team_name2} have the same defense")
+
 
 # About Section ====================================================================
 def about_section():
