@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 import psycopg2 as psy
 import os
 import base64
+import seaborn as sns
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -81,6 +83,57 @@ def executeQuery(query):
 
     return data
 
+# def plot():
+    # # Re-load the data files due to session reset
+    # file_path_matches = '/mnt/data/joined_matches.csv'
+    # file_path_teams = '/mnt/data/joined_teams.csv'
+    # matches_df = pd.read_csv(file_path_matches)
+    # teams_df = pd.read_csv(file_path_teams)
+
+    # # Renaming columns in teams_df for clarity and to avoid conflicts during merge
+    # teams_df_renamed = teams_df.rename(columns={
+    #     'TeamID': 'teamId',
+    #     'TeamName': 'teamName',
+    #     'MarketValue': 'marketValue',
+    #     'xG': 'expectedGoals'
+    # })
+
+    # # Merging team data with match data for home and away teams separately
+    # matches_with_teams = matches_df.merge(
+    #     teams_df_renamed[['teamId', 'marketValue', 'expectedGoals']],
+    #     left_on='homeTeamId',
+    #     right_on='teamId',
+    #     how='left'
+    # ).rename(columns={
+    #     'marketValue': 'homeMarketValue',
+    #     'expectedGoals': 'homeExpectedGoals'
+    # }).drop('teamId', axis=1)
+
+    # matches_with_teams = matches_with_teams.merge(
+    #     teams_df_renamed[['teamId', 'marketValue', 'expectedGoals']],
+    #     left_on='awayTeamId',
+    #     right_on='teamId',
+    #     how='left'
+    # ).rename(columns={
+    #     'marketValue': 'awayMarketValue',
+    #     'expectedGoals': 'awayExpectedGoals'
+    # }).drop('teamId', axis=1)
+
+    # # Calculating market value difference and expected goals difference
+    # matches_with_teams['marketValueDiff'] = matches_with_teams['homeMarketValue'] - matches_with_teams['awayMarketValue']
+    # matches_with_teams['expectedGoalsDiff'] = matches_with_teams['homeExpectedGoals'] - matches_with_teams['awayExpectedGoals']
+
+    # # Checking the first few rows of the merged data
+    # matches_with_teams.head()
+
+def cleanTeams(data):
+    # delete the "Team" column in data
+    data = data.drop(columns=['Team'])
+    # Move "Rank column to the first column"
+    data = data[['Rank','TeamID','TeamName','MarketValue','M','W','D','L','G','GA','PTS','xG','xGA','xPTS']]
+    # Sort the data by rank
+    data = data.sort_values(by=['Rank'])
+    return data
 
 team_data = None
 matches_data = None
@@ -156,18 +209,19 @@ def data_section():
     tables = pd.DataFrame(tables, columns=['table_name'])
 
     # Transform matches into dataframe with these headers: matchId,matchday,homeTeamId,awayTeamId,homeScore,awayScore,played
-    matches = pd.DataFrame(matches, columns=['matchId','matchday','homeTeamId','awayTeamId','homeScore','awayScore', 'last_updated', 'played'])
+    matches = pd.DataFrame(matches, columns=['matchId','matchday','homeTeamId','awayTeamId','homeScore','awayScore', 'played'])
 
     st.info("To sort the data based on the column, please select the column name in the table.")
     st.info("***Arrow up: From Lowest, Arrow down: From Highest***")
 
+    # TEAMS ==================================================================
+    #! For joined_teams.csv:
+    #! Team Market Value: A bar chart comparing the market values of different teams.
+    #! Points Accumulation Over Time: A line chart showing how each team's points have accumulated over the season.
+    #! Goals For vs. Goals Against: A scatter plot comparing goals scored against goals conceded for each team.
+    #! Expected vs. Actual Performance: Comparing expected goals (xG, xGA, xPTS) with actual performance (G, GA, PTS) for each team.
     st.header("Teams")
-    # delete the "Team" column in data
-    data = data.drop(columns=['Team'])
-    # Move "Rank column to the first column"
-    data = data[['Rank','TeamID','TeamName','MarketValue','M','W','D','L','G','GA','PTS','xG','xGA','xPTS']]
-    # Sort the data by rank
-    data = data.sort_values(by=['Rank'])
+    data = cleanTeams(data)
     team_data = data
     st.dataframe(data, use_container_width=True, hide_index=True)
     st.warning("**Legend**")
@@ -207,8 +261,13 @@ def data_section():
 
 
     # MATCHES =========================================
+    #! For joined_matches.csv:
+    #! Match Results Heatmap: Displaying home and away scores for each match, providing a quick overview of match outcomes.
+    #! Goals Per Matchday: A line or bar chart showing the total number of goals scored in each matchday.
+    #! Win/Loss Ratio for Teams: A bar chart indicating how many matches each team won, lost, or drew.
+
     # drop the last_updated column
-    matches = matches.drop(columns=['last_updated'])
+    # matches = matches.drop(columns=['last_updated'])
     # change the homeTeamId and awayTeamId into team name
     matches['homeTeamId'] = matches['homeTeamId'].replace(data['TeamID'].tolist(), data['TeamName'].tolist())
     matches['awayTeamId'] = matches['awayTeamId'].replace(data['TeamID'].tolist(), data['TeamName'].tolist())
@@ -262,16 +321,41 @@ def data_section():
         ax.axis('equal')
         plt.title("Percentage of Played and Not Played Matches")
         st.pyplot(fig)
-    
 
+    # Match Results Heatmap
+    st.subheader("Match Results Heatmap")
+    # Create a pivot table
+    matches_pivot = matches.pivot_table(index='homeTeamId', columns='awayTeamId', values='result', aggfunc='count')
+    # Create a heatmap
+    fig, ax = plt.subplots()
+    ax.imshow(matches_pivot, cmap='RdYlGn', interpolation='nearest')
+    # Set the ticks
+    ax.set_xticks(np.arange(len(matches_pivot.columns)))
+    ax.set_yticks(np.arange(len(matches_pivot.index)))
+    # Set the tick labels
+    ax.set_xticklabels(matches_pivot.columns)
+    ax.set_yticklabels(matches_pivot.index)
+    # Rotate the tick labels and set their alignment
+    plt.setp(ax.get_xticklabels(), rotation=45, ha='right', rotation_mode='anchor')
+    # Loop over data dimensions and create text annotations
+    for i in range(len(matches_pivot.index)):
+        for j in range(len(matches_pivot.columns)):
+            text = ax.text(j, i, matches_pivot.iloc[i, j], ha='center', va='center', color='black', fontsize=2)
+    ax.set_title("Match Results Heatmap")
+    fig.tight_layout()
+    st.pyplot(fig)
+    
+    # TABLES =========================================
     st.header("Tables")
     st.dataframe(tables, use_container_width=True)
 
+    # 
+
 # Model Section ====================================================================
-def model_section():
-    st.header("Model")
+def team_performance_section():
+    st.header("Team Performance")
     if team_data == None:
-        st.write("No Data")
+        st.warning("Please go to **Data** section first!")
     else:
         team_data.dataframe()
 
@@ -434,14 +518,14 @@ def test_section():
 def main():
     st.sidebar.title("Navigation")
     st.sidebar.subheader("Go to")
-    app_mode = st.sidebar.radio("", ["Home", "Data", "Model", "About", "TestPage"])
+    app_mode = st.sidebar.radio("", ["Home", "Data", "Team Performance", "About", "TestPage"])
     hero_section()
     if app_mode == "Home":
         home_section()
     elif app_mode == "Data":
         data_section()
-    elif app_mode == "Model":
-        model_section()
+    elif app_mode == "Team Performance":
+        team_performance_section()
     elif app_mode == "About":
         about_section()
     elif app_mode == "TestPage":
