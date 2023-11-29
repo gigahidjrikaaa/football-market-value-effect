@@ -94,6 +94,13 @@ def data_section():
         -- LIMIT 10;
     """
 
+    # Sorted Teams query
+    sorted_teams_query = """
+        SELECT * FROM teams
+        ORDER BY marketvalue DESC
+        -- LIMIT 10;
+    """
+
     # Matches query
     matches_query = """
         SELECT * FROM matches
@@ -112,6 +119,11 @@ def data_section():
     query = teams_query
     cur.execute(query)
     data = cur.fetchall()
+
+    # Sorted Teams query
+    query = sorted_teams_query
+    cur.execute(query)
+    sorted_teams = cur.fetchall()
 
     # All tables query
     cur.execute(all_tables_query)
@@ -139,6 +151,9 @@ def data_section():
 
     st.header("Teams")
     st.write(data)
+
+    st.header("Sorted Teams Based by Market Value")
+    st.write(sorted_teams)
 
     st.header("Matches")
     st.write(matches)
