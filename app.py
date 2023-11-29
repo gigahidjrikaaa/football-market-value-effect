@@ -24,6 +24,8 @@ DB_HOST = os.environ['DB_HOST']
 DB_USERNAME = os.environ['DB_USERNAME']
 DB_PASSWORD = os.environ['DB_PASSWORD']
 DB_NAME = os.environ['DB_NAME']
+# DSN string
+dsn = f"host={DB_HOST} user={DB_USERNAME} password={DB_PASSWORD} dbname={DB_NAME}"
 
 hero_content = """
     <style>
@@ -42,6 +44,70 @@ hero_content = """
     </div>
 
 """
+
+# Query
+teams_query = """
+    SELECT * FROM teams
+    -- LIMIT 10;
+"""
+
+# Matches query
+matches_query = """
+    SELECT * FROM matches
+    -- LIMIT 10;
+"""
+
+# Select all tables
+all_tables_query = """
+    SELECT table_name
+    FROM information_schema.tables
+    WHERE table_schema='public'
+    AND table_type='BASE TABLE';
+"""
+
+def executeQuery(query):
+    # Connect to elephantSQL
+    conn = psy.connect(dsn)
+    # Create cursor
+    cur = conn.cursor()
+
+    cur.execute(query)
+    data = cur.fetchall()
+
+    # Close cursor
+    cur.close()
+    # Close connection
+    conn.close()
+
+    return data
+
+
+team_data = None
+matches_data = None
+
+# Function to highlight the cell
+def highlight_cell():
+    def highlight(x):
+        if x == 'Home':
+            color = '#377B2B'
+        elif x == 'Draw':
+            color = '#666666'
+        elif x == 'Away':
+            color = '#C93127'
+        else:
+            color = '#111111'
+        return 'background-color: %s' % color
+    return highlight
+
+# Function to change the data type to integer
+def cell_to_int():
+    def integer_cell(x):
+        if x != int:
+            return None
+        # return integer without comma
+        if x is float:
+            return int(x)
+    return integer_cell
 
 def hero_section():
     st.markdown('<h1 style="text-align: center;"> Football Market Value Effect App </h1>', unsafe_allow_html=True)
@@ -79,54 +145,9 @@ def data_section():
     st.write("3. [Ap yh](https://www.kaggle.com/zaeemnalla/premier-league#tables.csv)")
     st.image("https://media3.giphy.com/media/N97DxHrADyYGovSlRN/giphy.gif?cid=ecf05e47gyar03htuztm57qe3ji8oce75xhmowop7nrx0c0i&ep=v1_gifs_search&rid=giphy.gif&ct=g", use_column_width="True")
 
-    # DSN string
-    dsn = f"host={DB_HOST} user={DB_USERNAME} password={DB_PASSWORD} dbname={DB_NAME}"
-
-    # Connect to elephantSQL
-    conn = psy.connect(dsn)
-
-    # Create cursor
-    cur = conn.cursor()
-
-    # Query
-    teams_query = """
-        SELECT * FROM teams
-        -- LIMIT 10;
-    """
-
-    # Matches query
-    matches_query = """
-        SELECT * FROM matches
-        -- LIMIT 10;
-    """
-
-    # Select all tables
-    all_tables_query = """
-        SELECT table_name
-        FROM information_schema.tables
-        WHERE table_schema='public'
-        AND table_type='BASE TABLE';
-    """
-
-    # Teams query
-    query = teams_query
-    cur.execute(query)
-    data = cur.fetchall()
-
-    # All tables query
-    cur.execute(all_tables_query)
-    tables = cur.fetchall()
-
-    # Matches query
-    query = matches_query
-    cur.execute(query)
-    matches = cur.fetchall()
-
-    # Close cursor
-    cur.close()
-
-    # Close connection
-    conn.close()
+    data = executeQuery(teams_query)
+    matches = executeQuery(matches_query)
+    tables = executeQuery(all_tables_query)
 
     # Transform data into dataframe with these headers: TeamID,TeamName,MarketValue,No,Team,M,W,D,L,G,GA,PTS,xG,xGA,xPTS
     data = pd.DataFrame(data, columns=['TeamID','TeamName','MarketValue','Rank','Team','M','W','D','L','G','GA','PTS','xG','xGA','xPTS'])
@@ -135,10 +156,20 @@ def data_section():
     tables = pd.DataFrame(tables, columns=['table_name'])
 
     # Transform matches into dataframe with these headers: matchId,matchday,homeTeamId,awayTeamId,homeScore,awayScore,played
-    matches = pd.DataFrame(matches, columns=['matchId','matchday','homeTeamId','awayTeamId','homeScore','awayScore','played'])
+    matches = pd.DataFrame(matches, columns=['matchId','matchday','homeTeamId','awayTeamId','homeScore','awayScore', 'last_updated', 'played'])
+
+    st.info("To sort the data based on the column, please select the column name in the table.")
+    st.info("***Arrow up: From Lowest, Arrow down: From Highest***")
 
     st.header("Teams")
-    st.dataframe(data, use_container_width=True)
+    # delete the "Team" column in data
+    data = data.drop(columns=['Team'])
+    # Move "Rank column to the first column"
+    data = data[['Rank','TeamID','TeamName','MarketValue','M','W','D','L','G','GA','PTS','xG','xGA','xPTS']]
+    # Sort the data by rank
+    data = data.sort_values(by=['Rank'])
+    team_data = data
+    st.dataframe(data, use_container_width=True, hide_index=True)
     st.warning("**Legend**")
     col1, col2 = st.columns(2)
     with col1:
@@ -167,14 +198,35 @@ def data_section():
     with col2:
         # Show the rank and name of the teams in table form
         data_sorted_by_rank = data.sort_values(by=['Rank'])
-        st.write("Rank and Name of Teams")
-        # show only Rank and TeamName columns without the index and min height = 500px
-        st.dataframe(data_sorted_by_rank[['Rank', 'TeamName', sort_by]], hide_index=True, use_container_width=True, height=750)
+        st.write("Premier League Table")
+        if sort_by == "MarketValue":
+            st.dataframe(data_sorted_by_rank[['Rank', 'TeamName', sort_by]], hide_index=True, use_container_width=True, height=750)
+        else:
+            st.dataframe(data_sorted_by_rank[['Rank', 'TeamName', 'MarketValue', sort_by]], hide_index=True, use_container_width=True, height=750)
         st.write("")
 
 
+    # MATCHES =========================================
+    # drop the last_updated column
+    matches = matches.drop(columns=['last_updated'])
+    # change the homeTeamId and awayTeamId into team name
+    matches['homeTeamId'] = matches['homeTeamId'].replace(data['TeamID'].tolist(), data['TeamName'].tolist())
+    matches['awayTeamId'] = matches['awayTeamId'].replace(data['TeamID'].tolist(), data['TeamName'].tolist())
+    
+    
+    # change the played column into Yes or No
+    matches['played'] = np.where(matches['played'] == True, 'Yes', 'No')
+
+    # add a new column called "result". change the cell color based on the result. home = green, draw = grey, away = red
+    # if match is not played yet (played = False), the result is None
+    matches['result'] = np.where(matches['played'] == 'No', None, np.where(matches['homeScore'] > matches['awayScore'], 'Home', np.where(matches['homeScore'] == matches['awayScore'], 'Draw', 'Away')))
+    
     st.header("Matches")
-    st.dataframe(matches, use_container_width=True)
+    matches_data = matches
+    # give the color to the result column and make the homeScore and awayScore as integers
+    matches_styled = matches.style.applymap(highlight_cell(), subset=['result'])
+    matches_styled = matches_styled.applymap(cell_to_int(), subset=['homeScore', 'awayScore'])
+    st.dataframe(matches_styled, use_container_width=True)
 
     # Create 2 columns
     col1, col2 = st.columns(2)
@@ -183,13 +235,16 @@ def data_section():
     with col1:
         # Create a pie chart which shows the percentage of win, draw, and lose in home matches  
         fig, ax = plt.subplots()
-        home_win = matches[matches['homeScore'] > matches['awayScore']].count()['matchId']
-        home_draw = matches[matches['homeScore'] == matches['awayScore']].count()['matchId']
-        home_lose = matches[matches['homeScore'] < matches['awayScore']].count()['matchId']
+        home_win = matches[matches['result'] == 'Home'].count()['matchId']
+        home_draw = matches[matches['result'] == 'Draw'].count()['matchId']
+        home_lose = matches[matches['result'] == 'Away'].count()['matchId']
         # Win = green (#377B2B)
         # Draw = yellow (#FDBB2F)
         # Lose = red (#C93127)
         ax.pie([home_win, home_draw, home_lose], labels=['Win', 'Draw', 'Lose'], autopct='%1.1f%%', startangle=90, colors=['#377B2B', '#FDBB2F', '#C93127'])
+        ax.text(-0.59, -0.05, f"{home_win} matches", fontsize=10, weight='bold', ha='center')
+        ax.text(0.16, -0.72, f"{home_draw} matches", fontsize=10, weight='bold', ha='center')
+        ax.text(0.5, 0.12, f"{home_lose} matches", fontsize=10, weight='bold', ha='center')
         ax.axis('equal')
         plt.title("Percentage of Win, Draw, and Lose in Home Matches")
         st.pyplot(fig)
@@ -198,8 +253,8 @@ def data_section():
     with col2:
         # create a pie chart which shows how many matches have been played
         fig, ax = plt.subplots()
-        played = matches[matches['played'] == True].count()['matchId']
-        not_played = matches[matches['played'] == False].count()['matchId']
+        played = matches[matches['played'] == 'Yes'].count()['matchId']
+        not_played = matches[matches['played'] == 'No'].count()['matchId']
         # Pie chart with the percentage and the exact number of matches
         ax.pie([played, not_played], labels=['Played', 'Not Played'], autopct='%1.1f%%', startangle=90, colors=['#377B2B', '#C93127'])
         ax.text(-0.5, 0.1, f"{played} matches", fontsize=10, weight='bold', ha='center')
@@ -210,12 +265,17 @@ def data_section():
     
 
     st.header("Tables")
-    st.write(tables)
+    st.dataframe(tables, use_container_width=True)
 
+# Model Section ====================================================================
 def model_section():
     st.header("Model")
-    st.write("This app uses something.")
+    if team_data == None:
+        st.write("No Data")
+    else:
+        team_data.dataframe()
 
+# About Section ====================================================================
 def about_section():
     st.header("About")
     st.write("This app was created by [Izzat Arroyan](https://www.linkedin.com/in/izzatarroyan/), [Giga Hidjrika Aura Adkhy](https://www.linkedin.com/in/gigahidjrikaaa/), and [Daffa Kamal](https://www.linkedin.com/in/daffakamal/).")
