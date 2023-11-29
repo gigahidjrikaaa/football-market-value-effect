@@ -336,11 +336,21 @@ def data_section(params_team_data, params_matches_data):
 
     # Match Results Heatmap
     st.subheader("Match Results Heatmap")
+    # change the result column into 0, 0.5, and 1
+    matches['result'] = matches['result'].replace([None, 'Away', 'Draw', 'Home'], [None, 0, 0.5, 1])
+
     # Create a pivot table
-    matches_pivot = matches.pivot_table(index='homeTeamId', columns='awayTeamId', values='result', aggfunc='count')
+    matches_pivot = matches.pivot_table(index='homeTeamId', columns='awayTeamId', values='result', aggfunc='sum' if 'result' == 'Home' else 'mean')
+    
+    # Create a color palette
+    cmap = sns.color_palette("RdYlGn", as_cmap=True)
+
     # Create a heatmap
     fig, ax = plt.subplots()
-    ax.imshow(matches_pivot, cmap='RdYlGn', interpolation='nearest')
+    heatmap = ax.imshow(matches_pivot, cmap=cmap, interpolation='nearest')
+    # Set the colorbar to show the mapping of values to colors
+    cbar = plt.colorbar(heatmap, ticks=[0, 0.5, 1])
+    cbar.ax.set_yticklabels(['Away', 'Draw', 'Home'])
     # Set the ticks
     ax.set_xticks(np.arange(len(matches_pivot.columns)))
     ax.set_yticks(np.arange(len(matches_pivot.index)))
@@ -348,17 +358,23 @@ def data_section(params_team_data, params_matches_data):
     ax.set_xticklabels(matches_pivot.columns)
     ax.set_yticklabels(matches_pivot.index)
     # Rotate the tick labels and set their alignment
-    plt.setp(ax.get_xticklabels(), rotation=45, ha='right', rotation_mode='anchor')
+    plt.setp(ax.get_xticklabels(), rotation=45, ha='right', rotation_mode='anchor', fontsize=5)
+    plt.setp(ax.get_yticklabels(), fontsize=5)
+    # x-axis label
+    ax.set_xlabel('Away Team')
+    # y-axis label
+    ax.set_ylabel('Home Team')
     # Loop over data dimensions and create text annotations
     for i in range(len(matches_pivot.index)):
         for j in range(len(matches_pivot.columns)):
-            text = ax.text(j, i, matches_pivot.iloc[i, j], ha='center', va='center', color='black', fontsize=2)
+            text = ax.text(j, i, matches_pivot.iloc[i, j], ha='center', va='center', color='black', fontsize=4)
     ax.set_title("Match Results Heatmap")
     fig.tight_layout()
     st.pyplot(fig)
     
     # TABLES =========================================
     st.header("Tables")
+    st.info("This section is used to show the tables in the database.")
     st.dataframe(tables, use_container_width=True)
 
     # 
@@ -394,9 +410,9 @@ def team_performance_section(params_team_data, params_matches_data):
         # 2 subcolumns: home and away matches
         subcol1, subcol2 = st.columns(2)
         with subcol1:
-            st.write(f"Home matches: {home_matches}")
+            st.success(f"Home matches: {home_matches}")
         with subcol2:
-            st.write(f"Away matches: {away_matches}")
+            st.error(f"Away matches: {away_matches}")
 
         # Count how many times team 1 won in home
         home_win = matches_data[(matches_data['homeTeamId'] == team_name1) & (matches_data['result'] == 'Home')].count()['matchId']
@@ -411,11 +427,11 @@ def team_performance_section(params_team_data, params_matches_data):
         # 2 subcolumns: home and away matches
         subcol1, subcol2 = st.columns(2)
         with subcol1:
-            st.write(f"Home win: {home_win}")
-            st.write(f"Home draw: {home_draw}")
+            st.success(f"Home win: {home_win}")
+            st.warning(f"Home draw: {home_draw}")
         with subcol2:
-            st.write(f"Home lose: {home_lose}")
-            st.write(f"Home matches: {home_matches}")
+            st.error(f"Home lose: {home_lose}")
+            st.info(f"Home matches: {home_matches}")
 
         # Count how many times team 1 won in away
         away_win = matches_data[(matches_data['awayTeamId'] == team_name1) & (matches_data['result'] == 'Away')].count()['matchId']
@@ -430,11 +446,11 @@ def team_performance_section(params_team_data, params_matches_data):
         # 2 subcolumns: home and away matches
         subcol1, subcol2 = st.columns(2)
         with subcol1:
-            st.write(f"Away win: {away_win}")
-            st.write(f"Away draw: {away_draw}")
+            st.success(f"Away win: {away_win}")
+            st.warning(f"Away draw: {away_draw}")
         with subcol2:
-            st.write(f"Away lose: {away_lose}")
-            st.write(f"Away matches: {away_matches}")
+            st.error(f"Away lose: {away_lose}")
+            st.info(f"Away matches: {away_matches}")
     
     # Column 2
     with col2:
@@ -455,9 +471,9 @@ def team_performance_section(params_team_data, params_matches_data):
         # 2 subcolumns: home and away matches
         subcol1, subcol2 = st.columns(2)
         with subcol1:
-            st.write(f"Home matches: {home_matches}")
+            st.info(f"Home matches: {home_matches}")
         with subcol2:
-            st.write(f"Away matches: {away_matches}")
+            st.info(f"Away matches: {away_matches}")
 
         # Count how many times team 2 won in home
         home_win = matches_data[(matches_data['homeTeamId'] == team_name2) & (matches_data['result'] == 'Home')].count()['matchId']
@@ -472,11 +488,11 @@ def team_performance_section(params_team_data, params_matches_data):
         # 2 subcolumns: home and away matches
         subcol1, subcol2 = st.columns(2)
         with subcol1:
-            st.write(f"Home win: {home_win}")
-            st.write(f"Home draw: {home_draw}")
+            st.success(f"Home win: {home_win}")
+            st.warning(f"Home draw: {home_draw}")
         with subcol2:
-            st.write(f"Home lose: {home_lose}")
-            st.write(f"Home matches: {home_matches}")
+            st.error(f"Home lose: {home_lose}")
+            st.info(f"Home matches: {home_matches}")
 
         # Count how many times team 2 won in away
         away_win = matches_data[(matches_data['awayTeamId'] == team_name2) & (matches_data['result'] == 'Away')].count()['matchId']
@@ -491,11 +507,11 @@ def team_performance_section(params_team_data, params_matches_data):
         # 2 subcolumns: home and away matches
         subcol1, subcol2 = st.columns(2)
         with subcol1:
-            st.write(f"Away win: {away_win}")
-            st.write(f"Away draw: {away_draw}")
+            st.success(f"Away win: {away_win}")
+            st.warning(f"Away draw: {away_draw}")
         with subcol2:
-            st.write(f"Away lose: {away_lose}")
-            st.write(f"Away matches: {away_matches}")
+            st.error(f"Away lose: {away_lose}")
+            st.info(f"Away matches: {away_matches}")
 
     # Comparison between team 1 and team 2
     st.subheader("Comparison Between Team 1 and Team 2")
@@ -571,9 +587,9 @@ def team_performance_section(params_team_data, params_matches_data):
             st.info(f"{team_name1}: {team1['xGA'].values[0]}")
         with subcol2:
             st.info(f"{team_name2}: {team2['xGA'].values[0]}")
-        if team1['xGA'].values[0] > team2['xGA'].values[0]:
+        if team1['xGA'].values[0] < team2['xGA'].values[0]:
             st.success(f"{team_name1} has a better defense than {team_name2}")
-        elif team1['xGA'].values[0] < team2['xGA'].values[0]:
+        elif team1['xGA'].values[0] > team2['xGA'].values[0]:
             st.error(f"{team_name2} has a better defense than {team_name1}")
         else:
             st.warning(f"{team_name1} and {team_name2} have the same defense")
@@ -602,9 +618,9 @@ def team_performance_section(params_team_data, params_matches_data):
             st.info(f"{team_name1}: {team1_home_win}")
         with subcol2:
             st.info(f"{team_name2}: {team2_home_win}")
-        if home_win > away_win:
+        if team1_home_win > team2_home_win:
             st.success(f"{team_name1} has more home wins than {team_name2}")
-        elif home_win < away_win:
+        elif team1_home_win < team2_home_win:
             st.error(f"{team_name2} has more home wins than {team_name1}")
         else:
             st.warning(f"{team_name1} and {team_name2} have the same home wins")
@@ -629,9 +645,9 @@ def team_performance_section(params_team_data, params_matches_data):
             st.info(f"{team_name1}: {team1_away_win}")
         with subcol2:
             st.info(f"{team_name2}: {team2_away_win}")
-        if away_win > home_win:
+        if team1_away_win > team2_away_win:
             st.success(f"{team_name1} has more away wins than {team_name2}")
-        elif away_win < home_win:
+        elif team1_away_win < team2_away_win:
             st.error(f"{team_name2} has more away wins than {team_name1}")
         else:
             st.warning(f"{team_name1} and {team_name2} have the same away wins")
@@ -650,7 +666,7 @@ def team_performance_section(params_team_data, params_matches_data):
         # PTS - xPTS
         team1_pts_xpts = round(team1['PTS'].values[0] - team1['xPTS'].values[0], 3)
         team2_pts_xpts = round(team2['PTS'].values[0] - team2['xPTS'].values[0], 3)
-        category_names = ['Offensive', 'Defensive', 'Overall Perf']
+        category_names = ['Goal Likelihood', 'Goal Against Likelihood', 'Overall Perf']
         # Create a bar chart
         team1_values = [team1_g_xg, team1_ga_xga, team1_pts_xpts]
         team2_values = [team2_g_xg, team2_ga_xga, team2_pts_xpts]
@@ -672,19 +688,44 @@ def team_performance_section(params_team_data, params_matches_data):
             st.info(f"{team_name1}: {team1_g_xg}, {team1_ga_xga}, {team1_pts_xpts}")
         with subcol2:
             st.info(f"{team_name2}: {team2_g_xg}, {team2_ga_xga}, {team2_pts_xpts}")
-        if team1_g_xg > team2_g_xg and team1_ga_xga < team2_ga_xga and team1_pts_xpts > team2_pts_xpts:
-            st.success(f"{team_name1} has a better performance than {team_name2}")
-        elif team1_g_xg < team2_g_xg and team1_ga_xga > team2_ga_xga and team1_pts_xpts < team2_pts_xpts:
-            st.error(f"{team_name2} has a better performance than {team_name1}")
+        
+        #  If the offensive value is positive, it means that the team has scored more goals than expected.
+        #  If the offensive value is negative, it means that the team has scored fewer goals than expected.
+        if team1_g_xg > team2_g_xg:
+            st.success(f"{team_name1} has a better offensive performance than {team_name2}")
+        elif team1_g_xg < team2_g_xg:
+            st.error(f"{team_name2} has a better offensive performance than {team_name1}")
         else:
-            st.warning(f"{team_name1} and {team_name2} have the same performance")
+            st.warning(f"{team_name1} and {team_name2} have the same offensive performance")
+
+        #  If the defensive value is negative, it means that the team has conceded fewer goals than expected.
+        #  If the defensive value is positive, it means that the team has conceded more goals than expected.
+        if team1_ga_xga < team2_ga_xga:
+            st.success(f"{team_name1} has a better defensive performance than {team_name2}")
+        elif team1_ga_xga > team2_ga_xga:
+            st.error(f"{team_name2} has a better defensive performance than {team_name1}")
+        else:
+            st.warning(f"{team_name1} and {team_name2} have the same defensive performance")
+
+        #  If the overall performance value is positive, it means that the team has scored more points than expected.
+        #  If the overall performance value is negative, it means that the team has scored fewer points than expected.
+        if team1_pts_xpts > team2_pts_xpts:
+            st.success(f"{team_name1} has a better overall performance than {team_name2}")
+        elif team1_pts_xpts < team2_pts_xpts:
+            st.error(f"{team_name2} has a better overall performance than {team_name1}")
+        else:
+            st.warning(f"{team_name1} and {team_name2} have the same overall performance")
 
 
 # About Section ====================================================================
-def about_section():
+def about_section(team_data, matches_data):
     st.header("About")
-    st.write("This app was created by [Izzat Arroyan](https://www.linkedin.com/in/izzatarroyan/), [Giga Hidjrika Aura Adkhy](https://www.linkedin.com/in/gigahidjrikaaa/), and [Daffa Kamal](https://www.linkedin.com/in/daffakamal/).")
-
+    st.write("This app is created to help you to analyze the performance of each team in the current Premier League season. The data used in this app is from [Understat](https://understat.com/), [Transfermarkt](), and [Football-data.org]().")
+    st.write("We have a Notion page for this project. You can check it [here](https://harsh-infinity-6f9.notion.site/End-To-End-Data-Pipeline-for-Premier-League-Match-Insights-474cc2d880684eb78b90f977f3c7108a?pvs=4).")
+    st.write("This app was created by:")
+    st.info("[Izzat Arroyan](https://www.linkedin.com/in/izzatarroyan/)")
+    st.info("[Giga Hidjrika Aura Adkhy](https://www.linkedin.com/in/gigahidjrikaaa/)")
+    st.info("[Daffa Kamal](https://www.linkedin.com/in/daffakamal/)")
 def test_section():
     # Title
     st.title("Test Page")
@@ -838,8 +879,7 @@ def test_section():
 
 def main():
     st.sidebar.title("Navigation")
-    st.sidebar.subheader("Go to")
-    app_mode = st.sidebar.radio("", ["Home", "Data", "Team Performance", "About", "TestPage"])
+    app_mode = st.sidebar.radio("", ["Home", "Data", "Team Performance", "About", "TestPage"], index=0, key="navigation")
     
     team_data = None
     matches_data = None
