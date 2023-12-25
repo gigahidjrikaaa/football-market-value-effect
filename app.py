@@ -879,7 +879,7 @@ def test_section():
 
 def main():
     st.sidebar.title("Navigation")
-    app_mode = st.sidebar.radio("", ["Home", "Data", "Team Performance", "About", "TestPage"], index=0, key="navigation")
+    app_mode = st.sidebar.radio("", ["Home", "Data", "Team Performance", "About"], index=0, key="navigation")
     
     team_data = None
     matches_data = None
@@ -902,8 +902,8 @@ def main():
         team_performance_section(team_data, matches_data)
     if app_mode == "About":
         about_section(team_data, matches_data)
-    if app_mode == "TestPage":
-        test_section()
+    # if app_mode == "TestPage":
+    #     test_section()
 
 if __name__ == "__main__":
     main()
